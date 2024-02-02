@@ -3,6 +3,11 @@ provider "aws" {
   region = var.region
 }
 
+# Create the KMS for PostgreSQL cluster
+data "aws_kms_key" "db" {
+  key_id = var.kms_key_alias
+}
+
 # Create the Aurora PostgreSQL cluster
 resource "aws_rds_cluster" "aurora_postgres" {
   cluster_identifier      = var.cluster_identifier
@@ -13,13 +18,17 @@ resource "aws_rds_cluster" "aurora_postgres" {
   master_password         = random_password.password.result
   backup_retention_period = var.backup_retention_period
   preferred_backup_window = var.preferred_backup_window
-  skip_final_snapshot     = var.skip_final_snapshot
+  #skip_final_snapshot    = var.skip_final_snapshot
   vpc_security_group_ids  = var.vpc_security_group_ids
   db_subnet_group_name    = var.db_subnet_group_name
   storage_encrypted       = var.storage_encrypted
   kms_key_id              = var.kms_key_id
   deletion_protection     = var.deletion_protection
   tags                    = var.tags
+
+  publicly_accessible = false
+  deletion_protection  = true
+  skip_final_snapshot  = false
  
   # Custom parameter configuration
   enabled_cloudwatch_logs_exports = ["audit", "error", "general", "slowquery"]
@@ -54,19 +63,28 @@ resource "aws_rds_cluster_parameter_group" "custom_parameter_group" {
   tags        = var.tags
 }
 
-# Attach custom parameters to the Aurora PostgreSQL cluster
+# Cluster parameters for the Aurora PostgreSQL
 resource "aws_rds_cluster_instance" "aurora_postgres_instance" {
-  cluster_identifier         = aws_rds_cluster.aurora_postgres.id
-  instance_class             = var.instance_class
-  engine                     = "aurora-postgresql"
-  engine_version             = var.engine_version
-  db_subnet_group_name       = var.db_subnet_group_name
-  vpc_security_group_ids     = var.vpc_security_group_ids
-  apply_immediately          = true
-  monitoring_interval        = var.monitoring_interval
-  promotion_tier             = var.promotion_tier
-  performance_insights_kms_key_id = var.performance_insights_kms_key_id
-  tags                       = var.tags
+  identifier                       = "${var.project_name}-${count.index}"
+  cluster_identifier               = aws_rds_cluster.aurora_postgres.id
+  instance_class                   = var.instance_class
+  engine                           = "aurora-postgresql"
+  engine_version                   = var.engine_version
+  #engine_mode                     = var.cluster_engine_mode
+  kms_key_id                       = data.aws_kms_key.db.arn
+  db_subnet_group_name             = var.db_subnet_group_name
+  vpc_security_group_ids           = var.vpc_security_group_ids
+  monitoring_interval              = var.monitoring_interval
+  promotion_tier                   = var.promotion_tier
+  performance_insights_kms_key_id  = var.performance_insights_kms_key_id
+  tags                             = var.tags
+  enabled_cloudwatch_logs_exports  = ["postgresql"]
+  count                            = 1
+  apply_immediately                = true 
+  deletion_protection              = true
+  publicly_accessible              = false
+  storage_encrypted                = true
+
 }
 # Configure custom parameters for the Aurora PostgreSQL cluster
 resource "aws_rds_cluster_parameter_group_attachment" "custom_parameter_group_attachment" {
@@ -198,4 +216,5 @@ resource "aws_security_group" "aurora_sg" {
     protocol    = var.ingress_protocol
     cidr_blocks = var.ingress_cidr_blocks
   }
+
 }
