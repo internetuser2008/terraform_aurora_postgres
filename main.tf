@@ -26,41 +26,20 @@ resource "aws_rds_cluster" "aurora_postgres" {
   deletion_protection     = var.deletion_protection
   tags                    = var.tags
 
-  publicly_accessible = false
-  deletion_protection  = true
-  skip_final_snapshot  = false
+  skip_final_snapshot     = false
+  apply_immediately       = true 
+  deletion_protection     = true
+  publicly_accessible     = false
+  storage_encrypted       = true
  
-  # Custom parameter configuration
+  ## Custom parameter configuration
   enabled_cloudwatch_logs_exports = ["audit", "error", "general", "slowquery"]
   enabled_cloudwatch_logs_exports = var.enabled_cloudwatch_logs_exports
 
-  # Enable enhanced monitoring
+  ## Enable enhanced monitoring
   monitoring_interval = var.monitoring_interval
   monitoring_role_arn = aws_iam_role.monitoring_role.arn
 
-  # Enable SSL enforcement and APG CCM
-  enabled_cloudwatch_logs_exports = ["audit", "error", "general", "slowquery"]
-  enabled_cloudwatch_logs_exports = var.enabled_cloudwatch_logs_exports
-
-  # Enable SSL enforcement and APG CCM
-  enabled_cloudwatch_logs_exports = ["audit", "error", "general", "slowquery"]
-  enabled_cloudwatch_logs_exports = var.enabled_cloudwatch_logs_exports
-
-  # Enable SSL enforcement and APG CCM
-  enabled_cloudwatch_logs_exports = ["audit", "error", "general", "slowquery"]
-  enabled_cloudwatch_logs_exports = var.enabled_cloudwatch_logs_exports
-
-  # Enable SSL enforcement and APG CCM
-  enabled_cloudwatch_logs_exports = ["audit", "error", "general", "slowquery"]
-  enabled_cloudwatch_logs_exports = var.enabled_cloudwatch_logs_exports
-}
-
-# Create custom parameter group
-resource "aws_rds_cluster_parameter_group" "custom_parameter_group" {
-  name        = var.custom_parameter_group_name
-  family      = var.custom_parameter_group_family
-  description = var.custom_parameter_group_description
-  tags        = var.tags
 }
 
 # Cluster parameters for the Aurora PostgreSQL
@@ -86,6 +65,20 @@ resource "aws_rds_cluster_instance" "aurora_postgres_instance" {
   storage_encrypted                = true
 
 }
+
+# Create custom parameter group
+resource "aws_rds_cluster_parameter_group" "custom_parameter_group" {
+  name        = var.custom_parameter_group_name
+  family      = var.custom_parameter_group_family
+  description = var.custom_parameter_group_description
+  parameter { name  = "log_statement" value = var.param_log_statement }
+  parameter { name  = "log_min_duration_statement" value = var.param_log_min_duration_statement }
+  parameter { name  = "idle_in_transaction_session_timeout" value = 0 }
+  parameter { name  = "apg_ccm_enabled" value = "1" }
+  parameter { name  = "ssl_enforce" value = "1" }
+  tags        = var.tags
+}
+
 # Configure custom parameters for the Aurora PostgreSQL cluster
 resource "aws_rds_cluster_parameter_group_attachment" "custom_parameter_group_attachment" {
   cluster_identifier = aws_rds_cluster.aurora_postgres.id
@@ -97,7 +90,7 @@ resource "aws_rds_cluster_instance_parameter_group" "custom_parameter_group_inst
   cluster_identifier = aws_rds_cluster.aurora_postgres.id
   parameter_group_name = aws_rds_cluster_parameter_group.custom_parameter_group.name
 }
-# Enable SSL enforcement and APG CCM
+
 resource "aws_rds_cluster_instance" "custom_parameter_group_instance" {
   cluster_identifier         = aws_rds_cluster.aurora_postgres.id
   instance_class             = var.instance_class
@@ -112,19 +105,6 @@ resource "aws_rds_cluster_instance" "custom_parameter_group_instance" {
   tags                       = var.tags
 
   apply_immediately = true
-  # Enable SSL enforcement
-  parameter_group_name = aws_rds_cluster_parameter_group.custom_parameter_group.name
-  parameter {
-    name  = "ssl_enforce"
-    value = "1"
-  }
-
-  # Enable APG CCM
-  parameter_group_name = aws_rds_cluster_parameter_group.custom_parameter_group.name
-  parameter {
-    name  = "apg_ccm_enabled"
-    value = "1"
-  }
 }
 
 # Create a random password for the master user
