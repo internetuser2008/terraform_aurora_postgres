@@ -1,29 +1,56 @@
-variable "db_name" {
-  description = "Name of the Aurora PostgreSQL database"
+variable "cluster_identifier"{
+  description = "Cluster Name for Aurora PostgreSQL database"
   type        = string
 }
-
-variable "db_username" {
+variable "engine_version"{
+  description = "Aurora PostgreSQL database Engine Version"
+  type        = string
+}
+variable "database_name"{
+  description = "DB_Name for the Aurora PostgreSQL database"
+  type        = string
+  default     = "MyApp"
+}
+variable "master_username"{
   description = "Username for the Aurora PostgreSQL database"
   type        = string
 }
-
-variable "db_password" {
-  description = "Password for the Aurora PostgreSQL database"
+variable "preferred_backup_window"{
+  description = "preferred time for the Aurora PostgreSQL database backup"
   type        = string
 }
-
-  cluster_identifier      = var.cluster_identifier
-  engine_version          = var.engine_version
-  database_name           = var.database_name
-  master_username         = var.master_username
-  master_password         = random_password.password.result
-  backup_retention_period = var.backup_retention_period
-  preferred_backup_window = var.preferred_backup_window
-  skip_final_snapshot     = var.skip_final_snapshot
-  vpc_security_group_ids  = var.vpc_security_group_ids
-  db_subnet_group_name    = var.db_subnet_group_name
-  storage_encrypted       = var.storage_encrypted
-  kms_key_id              = var.kms_key_id
-  deletion_protection     = var.deletion_protection
-  tags                    = var.tags
+variable "backup_retention_period"{
+  description = "Backup_retention for the Aurora PostgreSQL database"
+  type        = string
+}
+variable "skip_final_snapshot"{
+  description = "Username for the Aurora PostgreSQL database"
+  type        = string
+}
+variable "vpc_security_group_ids"{
+  description = "VPC to allow connection for the Aurora PostgreSQL database"
+  type        = string
+}
+variable "db_subnet_group_name"{
+  description = "Db Subnet group for Aurora PostgreSQL database"
+  type        = string
+}
+variable "storage_encrypted"{
+  description = "Encrypted Storage the Aurora PostgreSQL database"
+  type        = string
+  default     = "yes"
+}
+variable "kms_key_id"{
+  description = "Encrypt Key on storage for Aurora PostgreSQL database"
+  type        = string
+}
+variable "deletion_protection"{
+  description = "Accidental delete protection for Aurora PostgreSQL database"
+  type        = string
+  default     = "true"
+}
+variable "tags"{
+  description = "Tags applied to PostgreSQL database"
+  type        = string
+  default     = []
+}
